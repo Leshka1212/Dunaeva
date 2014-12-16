@@ -53,4 +53,14 @@ void main()
 	for( int j = 0; j < len; j++ )
 		data[j] = in(j, riffwave_reader::LEFT);
  
+	// находим диапазон изменения данных
+	int min = data[0];
+	int max = data[0];
+	for( int j = 0; j < len; j++ ){
+	  if( data[j] < min )
+	    min = data[j];
+	  if( data[j] > max )
+	    max = data[j];
+	}
+	printf("min=%d max=%d\n", min, max);
 }
