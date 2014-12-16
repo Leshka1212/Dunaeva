@@ -23,6 +23,52 @@
 
 using namespace std;
 
+//---------------------------------------------------------------------------
+//***************************************************************************
+//** ФНЧ
+//** in [] -> массив входных отчетов размером sizeIn **
+//** out [] -> массив выходных отчетов, размер д.б. sizeIn - N **
+//***************************************************************************
+void Filter (int in[], double out[], int sizeIn)
+{
+	const int N = 51; //Разрядность фильтра
+	double Fd = 44100; //Частота дискретизации входных данных
+	double Fs = 2450; //Частота полосы пропускания
+	double Fx = 2450; //Частота полосы затухания
+
+	double H [N] = {0}; //Импульсная характеристика фильтра
+	double H_id [N] = {0}; //Идеальная импульсная характеристика
+	double W [N] = {0}; //Взвешивамое окно
+
+	//Расчет импульсной хар-ки фильтра
+	double Fc = (Fs + Fx) / (2 * Fd);
+	for (int i=0; i < N; i++)
+	{
+		if (i==N/2) 
+			H_id[i] = 2*M_PI*Fc;
+		else 
+			H_id[i] = ( sinl( 2*M_PI*Fc*(i-N/2) ) ) / (i-N/2);
+		// весовая функция Блекмена
+		W [i] = 0.42 - 0.5 * cosl((2*M_PI*i) / N) + 0.08 * cosl((4*M_PI*i) / N);
+		H [i] = H_id[i] * W[i];
+	}
+
+	//Нормировка импульсной характеристики
+	double SUM=0;
+	for (int i=0; i<N; i++) 
+		SUM = SUM + H[i];
+	for (int i=0; i<N; i++) 
+		H[i]= H[i] / SUM;
+
+	//Фильтрация входных данных
+	for (int i=0; i<sizeIn-N; i++)
+	{
+		out[i]=0.;
+		for (int j=0; j<N; j++) 
+			out[i]=out[i] + H[j]*in[(int)N + i-j];
+	}
+}
+
 void main()
 {
 	//______________________________читаем даннные из wave_________________________
@@ -65,6 +111,8 @@ void main()
 	printf("min=%d max=%d\n", min, max);
 
 	//______________________________читаем даннные из wave_________________________
+	// фильтруем сигнал
+	Filter (data, dataAfterFiltr, len);
 
 	// прореживаем сигнал в 9 раз
 	for (int i=0,j=0;i<len;i+=9, j++)
@@ -87,10 +135,61 @@ void main()
 		// выполняем обратное БПФ
 		cifft(xr, xi, LEN);
 		time++;
+		//___________________рисуем спектр______________________
 		for( int j = 0; j < LEN/2; j++ )
 		{
+			HDC hDC;
+			HWND hWnd;
+			RECT Rect;
+			DWORD mode;
+			HANDLE hInput;
+			HPEN hPen, hOldPen;
+			HBRUSH hBrush, hOldBrush;
+			hWnd=GetConsoleWindow();
+			COLORREF Color16;
+			char buf[10];
+			unsigned long MaxUint32, MaxColor;
+			MaxUint32=MAXUint32;
+			MaxColor=COLOR;
+			if(!hWnd)
+			{
+				printf("Can't get hWnd of console!\n");
+				return;
+			}
+			hDC=GetDC(hWnd);
+			if(!hDC)
+			{
+				printf("Can't get device context!\n");
+				return;
+			}
+
 			Ck=fabs(xr[j]+xi[j])*(double)(2.0/LEN);
+		
+			Color=Ck;
+
+			Color16=(COLORREF)Color;
+
+			hPen=CreatePen(PS_SOLID,1,Color16);
+			hOldPen=(HPEN)SelectObject(hDC,hPen);
+
+			hInput=GetStdHandle(STD_INPUT_HANDLE);
+			GetClientRect(hWnd,&Rect);
+ 
+			MoveToEx(hDC,Rect.left+Step,Rect.top+j,0);
+			LineTo(hDC,Rect.left+Step+STEP,Rect.top+j);
+ 
+			GetConsoleMode(hInput,&mode);
+			SetConsoleMode(hInput,mode & ~(ENABLE_LINE_INPUT | ENABLE_ECHO_INPUT));
+ 
+			SelectObject(hDC,hOldPen);
+ 
+			DeleteObject(hPen);
+			ReleaseDC(hWnd, hDC);
+
+			//printf("%f \n",Ck);			
+
 		}
+		//___________________рисуем спектр______________________
 		
 	}
 	printf("%d",&time);
