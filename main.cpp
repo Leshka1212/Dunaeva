@@ -63,4 +63,36 @@ void main()
 	    max = data[j];
 	}
 	printf("min=%d max=%d\n", min, max);
+
+	//______________________________читаем даннные из wave_________________________
+
+	// прореживаем сигнал в 9 раз
+	for (int i=0,j=0;i<len;i+=9, j++)
+		signal[j]=dataAfterFiltr[i];
+	len/=9;
+	int time=0;
+	//______________________________делаем fft_____________________________________
+	for (int i=0,Step=0;i<len-LEN;i+=SDVIG,Step+=STEP)
+	{
+		int ColorRed;
+		int Color;
+		double Ck;
+		double xr[LEN], xi[LEN];
+		for(int j = 0; j < LEN; j++ )
+		{
+			xr[j] = signal[i+j];
+			xi[j] = 0.0;
+		}
+
+		// выполняем обратное БПФ
+		cifft(xr, xi, LEN);
+		time++;
+		for( int j = 0; j < LEN/2; j++ )
+		{
+			Ck=fabs(xr[j]+xi[j])*(double)(2.0/LEN);
+		}
+		
+	}
+	printf("%d",&time);
+	//______________________________делаем fft_____________________________________	
 }
