@@ -14,7 +14,7 @@
 #define NORM_SPEC 0.0039
 //#define MAXUint32 100000
 #define STEP 2
-#define SDVIG 49 // 49
+#define SDVIG 49// 49
 double xr[LEN], xi[LEN];
 int Step=0;
 
@@ -25,9 +25,8 @@ SpectrWindow::SpectrWindow(QWidget *parent):QWidget(parent) {
     
     filename="";
     drawSignal=false;
-    pixmap = QPixmap(1350,600);
-    
-}
+    pixmap = QPixmap(1350,600);  
+} 
 
 //---------------------------------------------------------------------------
 //***************************************************************************
@@ -80,6 +79,14 @@ void SpectrWindow::playMusic() {
         doMusic(filename);
 }
 
+void SpectrWindow::stopMusic() {
+    drawSignal = false;
+    player->stop();
+    QEventLoop loop;
+    emit unlockPlay();
+    loop.exec();    
+}
+
 void SpectrWindow::doMusic(QString filename) {
     riffwave_reader in(filename.toStdString().c_str());
         QString fileInfo="";
@@ -128,6 +135,10 @@ void SpectrWindow::doMusic(QString filename) {
 	int time=0;
         emit blockPlay();
         playMusic(filename);
+        QEventLoop loop;
+        //QTimer timer;
+        connect(this, SIGNAL(painted()), &loop, SLOT(quit()));
+        //connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
         //______________________________делаем fft_____________________________________
 	for (int i=0,Step=0;i<len-LEN;i+=SDVIG)
 	{
@@ -139,11 +150,13 @@ void SpectrWindow::doMusic(QString filename) {
 		}
 		// выполняем обратное БПФ
 		cifft(xr, xi, LEN);		
-                drawSignal=true;
-                qApp->processEvents();  
-                Sleep(50);
-                //this->update(QRect(Step,0,1,this->height()));
-                this->update();
+                drawSignal=true;                
+                //qApp->processEvents(); 
+                //Sleep(1/sps*(LEN-SDVIG));
+                //this->update(QRect(Step,0,1,this->height()));                
+                this->update();  
+                //timer.start(200);
+                loop.exec();
                 time++;
 		//___________________рисуем спектр______________________
                
@@ -174,13 +187,26 @@ void SpectrWindow::paintEvent(QPaintEvent *) {
 	{
             Ck=fabs(xr[j]+xi[j])*(double)(2.0/LEN);
                 painter.setPen(QPen(QColor(255,0,0,(Ck > 255 ? 255 : Ck)),0,Qt::SolidLine));
-            painter.drawPoint(Step - ((int)(Step/width))*width,j);
+            //painter.drawPoint(Step - ((int)(Step/width))*width,j);
+                painter.drawLine(Step - ((int)(Step/width))*width,j,Step - ((int)(Step/width))*width,j+1);
         }
-        
+        emit painted();
         Step+=STEP;
     }
-    QPainter p(this);
+    QPainter p(this);   
     p.drawPixmap(0, 0, pixmap);
+    p.setBrush(QBrush(Qt::white));
+    p.setPen(QPen(Qt::white,1,Qt::SolidLine));
+    p.drawText(675,570,tr("Частота"));
+    p.drawText(10,300,tr("А"));
+    p.drawText(10,310,tr("м"));
+    p.drawText(10,320,tr("п"));
+    p.drawText(10,330,tr("л"));
+    p.drawText(10,340,tr("и"));
+    p.drawText(10,350,tr("т"));
+    p.drawText(10,360,tr("у"));
+    p.drawText(10,370,tr("д"));
+    p.drawText(10,380,tr("а"));
 }
 
 void SpectrWindow::setFileName(QString _filename) {
@@ -196,8 +222,8 @@ void SpectrWindow::setFileName(QString _filename) {
 
 void SpectrWindow::playMusic(QString _path)
 {
-    QSound::play(_path);
+    //QSound::play(_path);
+    player = new QSound(_path);
+    Step=0;
+    player->play();
 }
-
-
-
