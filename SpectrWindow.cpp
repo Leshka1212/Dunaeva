@@ -8,13 +8,19 @@
 
 #include "riff.h"
 #include "fft.h"
+//#include <time.h>
+#include <ctime>
+#include <sys/time.h>
+#include <iostream>
+#include <unistd.h>
 
 #define LEN 1024
 #define MAXUint32 4294967295
 #define NORM_SPEC 0.0039
 //#define MAXUint32 100000
 #define STEP 2
-#define SDVIG 49// 49
+#define SDVIG 256
+#define REDIM 3
 double xr[LEN], xi[LEN];
 int Step=0;
 
@@ -102,36 +108,39 @@ void SpectrWindow::doMusic(QString filename) {
         mes->setText(tr("len: ")+QString::number(len)+tr(" sps: ")+QString::number(sps));
         mes->exec();*/
         // читаем данные в массив
-        int* data = static_cast<int*>(malloc(len * sizeof(int)));
-	double* dataAfterFiltr = static_cast<double*>(malloc(len * sizeof(double)));
-	double* signal = static_cast<double*>(malloc((len/5) * sizeof(double)));
+	//int* data = static_cast<int*>(malloc(len * sizeof(int)));
+	int* data = static_cast<int*>(malloc(LEN*REDIM * sizeof(int)));
+	//double* dataAfterFiltr = static_cast<double*>(malloc(len * sizeof(double)));
+	double* dataAfterFiltr = static_cast<double*>(malloc(LEN*REDIM * sizeof(double)));
+	//double* signal = static_cast<double*>(malloc((len/9) * sizeof(double)));
+	double* signal = static_cast<double*>(malloc((LEN) * sizeof(double)));
 	if( data == 0 ){
                 QMessageBox *mes = new QMessageBox();
                 mes->setText(tr("Can't allocate buffer!"));
                 mes->exec();
 		return;
 	}
-        for( int j = 0; j < len; j++ )
-		data[j] = in(j, riffwave_reader::LEFT);
-        int min = data[0];
-	int max = data[0];
-	for( int j = 0; j < len; j++ ){
-	  if( data[j] < min )
-	    min = data[j];
-	  if( data[j] > max )
-	    max = data[j];
-	}
-        fileInfo+=tr("Min: ")+QString::number(min)+tr("\nMax: ")+QString::number(max);
-        emit sendFileInfo(fileInfo);
+        //for( int j = 0; j < len; j++ )
+	//	data[j] = in(j, riffwave_reader::LEFT);
+//        int min = data[0];
+//	int max = data[0];
+//	for( int j = 0; j < len; j++ ){
+//	  if( data[j] < min )
+//	    min = data[j];
+//	  if( data[j] > max )
+//	    max = data[j];
+//	}
+//        fileInfo+=tr("Min: ")+QString::number(min)+tr("\nMax: ")+QString::number(max);
+//        emit sendFileInfo(fileInfo);
         
         //______________________________читаем даннные из wave_________________________
 	// фильтруем сигнал
-	Filter (data, dataAfterFiltr, len);
+	//Filter (data, dataAfterFiltr, len);
 
-	// прореживаем сигнал в 9 раз
-	for (int i=0,j=0;i<len;i+=5, j++)
-		signal[j]=dataAfterFiltr[i];
-	len/=5;
+	// прореживаем сигнал 
+//	for (int i=0,j=0;i<len;i+=REDIM, j++)
+//		signal[j]=dataAfterFiltr[i];
+	//len/=REDIM;
 	int time=0;
         emit blockPlay();
         playMusic(filename);
@@ -140,22 +149,46 @@ void SpectrWindow::doMusic(QString filename) {
         connect(this, SIGNAL(painted()), &loop, SLOT(quit()));
         //connect(&timer, SIGNAL(timeout()), &loop, SLOT(quit()));
         //______________________________делаем fft_____________________________________
-	for (int i=0,Step=0;i<len-LEN;i+=SDVIG)
+	for (int i=0;i<len-LEN*REDIM;i+=SDVIG*REDIM)
 	{
-		//double Ck;		
-		for(int j = 0; j < LEN; j++ )
+                //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
+                unsigned int t1 = clock();
+                //double Ck;		
+		//QTime start = QTime::currentTime();
+                
+                for( int k = 0; k < LEN*REDIM; k++ )
+                        data[k] = in(i+k, riffwave_reader::LEFT);
+                
+		// фильтруем сигнал
+                //         Filter (data, dataAfterFiltr, LEN*REDIM);
+                
+                // прореживаем сигнал 
+                for (int l=0,k=0;l<LEN*REDIM;l+=REDIM, k++)
+                        //signal[k]=dataAfterFiltr[l];
+						signal[k]=data[l];
+                
+                for(int j = 0; j < LEN; j++ )
 		{
-			xr[j] = signal[i+j];
+			//xr[j] = signal[i+j];
+                        xr[j] = signal[j];
 			xi[j] = 0.0;
 		}
 		// выполняем обратное БПФ
+                
 		cifft(xr, xi, LEN);		
-                drawSignal=true;                
+                drawSignal=true;  
+                //Sleep(1/sps*(LEN - SDVIG));
                 //qApp->processEvents(); 
-                //Sleep(1/sps*(LEN-SDVIG));
+                //Sleep(1/sps*(LEN-(LEN-SDVIG)) - (t2-t1));
                 //this->update(QRect(Step,0,1,this->height()));                
                 this->update();  
                 //timer.start(200);
+                unsigned int t2 = clock();
+                
+                
+                //Sleep((REDIM*SDVIG)/sps - t2+t1);
+                Sleep((((double)REDIM/(double)sps)*((double)SDVIG))*1000 - (t2-t1));
+                //Sleep(1/sps*(LEN - SDVIG)- start.elapsed());
                 loop.exec();
                 time++;
 		//___________________рисуем спектр______________________
@@ -227,3 +260,6 @@ void SpectrWindow::playMusic(QString _path)
     Step=0;
     player->play();
 }
+
+
+
