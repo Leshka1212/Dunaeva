@@ -28,7 +28,17 @@ int I=0;
 
 //int dt;
 
-
+// оконная функция BLACKMAN_HARRIS
+void windowfunc (int in[], double out[], int sizeIn)
+{
+        
+        for (int i = 0; i < sizeIn; i++)
+        {
+            double a = 2.0 * M_PI * i / (sizeIn - 1);
+            in [i] *= 0.35875 - 0.48829 * cosl(a) + 0.14128 * cosl(2.0 * a) - 0.01168 * cosl(3.0 * a);
+            out[i]= in[i];
+        } 
+}
 
 SpectrWindow::SpectrWindow(QWidget *parent):QWidget(parent) {
     QTextCodec *code = QTextCodec::codecForName("UTF-8");
@@ -54,6 +64,8 @@ void SpectrWindow::MyTimerProc()
     for(int l=0,k=0;l<LEN*THINNING;l+=THINNING, k++)
         dataR[k]=data[l];
 
+	// вызов оконной функции
+    windowfunc(dataR, signal, LEN);
 
     for(int j = 0; j < LEN; j++ )
     {
