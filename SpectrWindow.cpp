@@ -38,3 +38,21 @@ SpectrWindow::SpectrWindow(QWidget *parent):QWidget(parent) {
     drawSignal=false;
     pixmap = QPixmap(1350,600);  
 } 
+
+void SpectrWindow::MyTimerProc()
+{
+    riffwave_reader in(filename.toStdString().c_str());
+            
+    int* data = static_cast<int*>(malloc(LEN*THINNING * sizeof(int)));
+    double* signal = static_cast<double*>(malloc((LEN) * sizeof(double)));
+    
+    for( int k = 0; k < LEN*THINNING; k++ )    
+        data[k] = in(I+k, riffwave_reader::LEFT);
+
+
+    for(int j = 0; j < LEN; j++ )
+    {
+        xr[j] = signal[j];
+        xi[j] = 0.0;
+    }
+}
