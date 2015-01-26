@@ -73,7 +73,9 @@ void SpectrWindow::MyTimerProc()
         xi[j] = 0.0;
     }
 
-           
+    cifft(xr, xi, LEN);		
+    drawSignal=true;  
+    this->update();        
     
     I+=SHIFT*THINNING;
     
