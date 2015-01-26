@@ -144,3 +144,20 @@ void SpectrWindow::paintEvent(QPaintEvent *) {
     p.drawText(10,350,tr("т"));
     p.drawText(10,360,tr("а"));
 }
+
+void SpectrWindow::setFileName(QString _filename) {
+    filename=_filename;
+    if(filename!="")
+    {
+        doMusic(filename);
+    }
+}
+
+void SpectrWindow::playMusic(QString _path)
+{
+    player = new QSound(_path);
+    emit blockPlay();
+    I=0;
+    Step=0;
+    player->play();
+}
