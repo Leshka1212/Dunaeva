@@ -94,3 +94,14 @@ void SpectrWindow::stopMusic() {
     ptimer->stop();
     emit unlockPlay();
 }
+
+void SpectrWindow::doMusic(QString filename) {
+    riffwave_reader in(filename.toStdString().c_str());
+    
+    len = in.data_size();
+    sps = in.samplespersec();
+    playMusic(filename);
+    ptimer = new QTimer(this);
+    connect(ptimer, SIGNAL(timeout()), SLOT(MyTimerProc()));
+    ptimer->start((1000/(double)sps) * ((double)SHIFT) *((double)THINNING));
+}
