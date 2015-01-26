@@ -82,3 +82,15 @@ void SpectrWindow::MyTimerProc()
     if(I>=len-LEN*THINNING)
         stopMusic();
 }
+
+void SpectrWindow::playMusic() {
+    if(filename!="")
+        doMusic(filename);
+}
+
+void SpectrWindow::stopMusic() {
+    drawSignal = false;
+    player->stop();
+    ptimer->stop();
+    emit unlockPlay();
+}
