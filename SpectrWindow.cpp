@@ -72,4 +72,11 @@ void SpectrWindow::MyTimerProc()
         xr[j] = signal[j];
         xi[j] = 0.0;
     }
+
+           
+    
+    I+=SHIFT*THINNING;
+    
+    if(I>=len-LEN*THINNING)
+        stopMusic();
 }
