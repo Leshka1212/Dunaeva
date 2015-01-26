@@ -105,3 +105,42 @@ void SpectrWindow::doMusic(QString filename) {
     connect(ptimer, SIGNAL(timeout()), SLOT(MyTimerProc()));
     ptimer->start((1000/(double)sps) * ((double)SHIFT) *((double)THINNING));
 }
+
+void SpectrWindow::paintEvent(QPaintEvent *) {
+    QPainter painter(&pixmap);
+    painter.setRenderHint(QPainter::Antialiasing, true);   
+
+    if(drawSignal)
+    {
+        double Ck;
+        COLORREF Color16;
+        int width = this->width();
+        if(Step - ((int)(Step/width))*width==0)
+        {
+            painter.setBrush(QBrush(Qt::black));
+            painter.drawRect(0,0,this->width(),this->height());
+        }        
+        for( int j = 0; j < LEN/2; j++ )
+	{
+           
+            Ck=fabs(xr[j]+xi[j])*(double)(4.0/LEN);
+            Color16 = (COLORREF)Ck;
+            painter.setPen(QPen(QColor::fromRgb(GetRValue(Color16), GetGValue(Color16), GetBValue(Color16),Ck > 255 ? 255 : Ck),0,Qt::SolidLine));
+            painter.drawLine(Step - ((int)(Step/width))*width,j,Step - ((int)(Step/width))*width,j+1);
+        }
+        emit painted();
+        Step+=STEP;
+    }
+    QPainter p(this);   
+    p.drawPixmap(0, 0, pixmap);
+    p.setBrush(QBrush(Qt::white));
+    p.setPen(QPen(Qt::white,1,Qt::SolidLine));
+    p.drawText(675,570,tr("Время"));
+    p.drawText(10,300,tr("Ч"));
+    p.drawText(10,310,tr("а"));
+    p.drawText(10,320,tr("с"));
+    p.drawText(10,330,tr("т"));
+    p.drawText(10,340,tr("о"));
+    p.drawText(10,350,tr("т"));
+    p.drawText(10,360,tr("а"));
+}
